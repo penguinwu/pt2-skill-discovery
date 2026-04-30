@@ -81,6 +81,36 @@ class TrialResult:
         return asdict(self)
 
 
+def bootstrap_original_backups(watched: list[WatchedFile]) -> list[Path]:
+    """Snapshot live source → .original backup for any WatchedFile missing one.
+
+    First-run-after-clean-/tmp recovery: case spec declares
+    `original_backup = WORK_DIR / "<source>.original"` but the file may not
+    exist yet (lost on /tmp clear, or never provisioned). Without it,
+    `_restore_watched_files` hard-errors on every trial.
+
+    SAFETY: this assumes the live source at `wf.path` is currently pristine.
+    If a prior trial corrupted it, we'd snapshot the corrupted version. There's
+    no general way to recover the true pristine source (it lives in the package
+    install). Caller must reason about whether sources are clean before calling.
+
+    Idempotent: never overwrites an existing .original. Returns the list of
+    paths that were newly created (for logging).
+    """
+    created: list[Path] = []
+    for wf in watched:
+        if wf.original_backup.exists():
+            continue
+        if not wf.path.exists():
+            raise FileNotFoundError(
+                f"cannot bootstrap .original — live source missing: {wf.path}"
+            )
+        wf.original_backup.parent.mkdir(parents=True, exist_ok=True)
+        shutil.copyfile(wf.path, wf.original_backup)
+        created.append(wf.original_backup)
+    return created
+
+
 def _restore_watched_files(watched: list[WatchedFile]) -> None:
     """Copy each .original backup over its target path."""
     for wf in watched:
@@ -240,7 +270,12 @@ def run_trial(
     out_dir.mkdir(parents=True, exist_ok=True)
     started_at = time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())
 
-    # 1. Restore all watched files.
+    # 1. Restore all watched files. First-run-after-clean-/tmp recovery:
+    #    snapshot live source if .original is missing (assumes source is pristine).
+    created = bootstrap_original_backups(case.watched_files)
+    if created:
+        for p in created:
+            print(f"[runner] bootstrapped missing .original: {p}")
     _restore_watched_files(case.watched_files)
 
     # 2. Compose prompt.
