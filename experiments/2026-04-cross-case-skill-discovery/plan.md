@@ -159,27 +159,27 @@ The `fix_status` verdict surfaces this distinction: `general` = model-layer fix;
 
 For each case in order:
 
-1. *Author the case files.* `corpus/discovery/cases/<case>.{py,baseline.json}` per `discovery/design.md` §6 schema. Set up `/tmp/discovery-runs/<case_id>/` with `baseline_*.py`, `validate.py`, source backups, baseline_eager_output.pt.
+1. *Author the case files.* `cases/<case>.py` per `design/design.md` §6 schema. Set up `/tmp/discovery-runs/<case_id>/` with `baseline_*.py`, `validate.py`, source backups, baseline_eager_output.pt. (The `validate.py` shim is auto-bootstrapped by `scripts.smoke_test.bootstrap_validate_shim` if missing.)
 2. *Pre-register the case as a per-model issue.* Use `tools/new_case_issue.py <experiment-slug> <case_id> "<Model name>"` (do NOT hand-roll — see `corpus/CLAUDE.md` §"Discovery Experiments"). The scaffold injects the canonical Pre-launch checklist (below) into the issue body.
 3. *Walk the Pre-launch checklist* (canonical below + any case-specific additions in the per-model issue). Tick each item before launching. If a case has quirks, add case-specific items to the issue's "Case-specific additions" section before launch.
-4. *Launch the standard matrix:* `python -m discovery.run_case --case <case_id> --variants V0,V2 --skills none,/home/pengwu/projects/oss-model-graph-break-corpus/discovery/skills/debug-graph-breaks/SKILL.md --n 3 --timeout 1800` (12 trials sequential, ~6 hrs wall).
-5. *Run Phase 0 audit + Phase A-F analysis* per `discovery/skills/per-case-analysis/SKILL.md`. Produces `reports/<case_id>/findings.md` + `fingerprints.csv`. Phase 0 (data trustworthiness) GATES Phase A — don't analyze on suspect data. **Phase B includes the conditional-trigger check:** if any V0/V2 trial used a canonical escape hatch or `is_compiling`, queue a V4 follow-up; if any flipped a `torch._dynamo.config` flag, queue a V6 follow-up; if ≥50% of trials in any cell ended `fix_status = setup-required`, queue a V8 follow-up. If none trigger, document "no conditional follow-ups warranted" in Phase B and stop at 12 trials.
+4. *Launch the standard matrix:* `python -m scripts.run_case --case <case_id> --variants V0,V2 --skills none,skills/debug-graph-breaks/SKILL.md --n 3 --timeout 1800` (12 trials sequential, ~6 hrs wall).
+5. *Run Phase 0 audit + Phase A-F analysis* per `skills/per-case-analysis/SKILL.md`. Produces `reports/<case_id>/findings.md` + `fingerprints.csv`. Phase 0 (data trustworthiness) GATES Phase A — don't analyze on suspect data. **Phase B includes the conditional-trigger check:** if any V0/V2 trial used a canonical escape hatch or `is_compiling`, queue a V4 follow-up; if any flipped a `torch._dynamo.config` flag, queue a V6 follow-up; if ≥50% of trials in any cell ended `fix_status = setup-required`, queue a V8 follow-up. If none trigger, document "no conditional follow-ups warranted" in Phase B and stop at 12 trials.
 6. *Conditional follow-up runs (if Phase B triggered):* relaunch with `--variants V4`, `--variants V6`, and/or `--variants V8` (same `--skills` and `--n` arguments). Re-run Phase A-F over the union of trials.
-7. *Commit the report to main* (`findings.md` + `fingerprints.csv` under `discovery/experiments/<exp>/reports/<case_id>/`). Push. Post a headline summary as a comment on the per-case issue (TL;DR + headlines + note on whether V4/V6 follow-ups ran). Per-case issue moves to Done. (Workflow change 2026-04-25: PR-FIRST discontinued — direct-to-main is the convention now. See `per-case-analysis/SKILL.md` Phase F for rationale.)
+7. *Commit the report to main* (`findings.md` + `fingerprints.csv` under `experiments/<exp>/reports/<case_id>/`). Push. Post a headline summary as a comment on the per-case issue (TL;DR + headlines + note on whether V4/V6 follow-ups ran). Per-case issue moves to Done. (Workflow change 2026-04-25: PR-FIRST discontinued — direct-to-main is the convention now. See `per-case-analysis/SKILL.md` Phase F for rationale.)
 
 ## Pre-launch checklist (canonical — snapshot into per-model issues)
 
 Tick each item before launching the harness. Paste command output for any check that's not obviously a one-liner.
 
-- [ ] *Case file imports cleanly:* `python -c "from discovery.cases.<case_id> import get_case_spec; print(get_case_spec().case_id)"` returns the case_id without exception.
-- [ ] *Baseline.json present:* `ls discovery/cases/<case_id>.baseline.json` exists with reasonable speedup numbers.
+- [ ] *Case file imports cleanly:* `python -c "from cases.<case_id> import get_case_spec; print(get_case_spec().case_id)"` returns the case_id without exception.
+- [ ] *Baseline.json present:* `ls cases/<case_id>.baseline.json` exists with reasonable speedup numbers.
 - [ ] *Pristine source backups:* `ls /tmp/discovery-runs/<case_id>/*.original` returns expected files (one `.original` per watched source file).
 - [ ] *Baseline eager output saved:* `ls /tmp/discovery-runs/<case_id>/baseline_eager_output.pt` exists.
 - [ ] *Validate runs cleanly:* `python /tmp/discovery-runs/<case_id>/validate.py` reports `import_ok`, `eager_ok`, `compile_ok` all true; `graph_break_count` matches the case's documented baseline (in baseline.json or case docstring).
-- [ ] *Backend confirmed:* `baseline_*.py` and `validate.py` use `torch.compile(model)` with default backend (inductor) — NOT `backend="eager"`. Discovery uses inductor; sweep uses eager (per design.md §2.1).
+- [ ] *Backend confirmed:* `baseline_*.py` and `validate.py` use `torch.compile(model)` with default backend (inductor) — NOT `backend="eager"`. Discovery uses inductor; sweep uses eager (per design/design.md §2.1).
 - [ ] *Watched files set:* case spec lists exactly the files agent may edit; no shared infra (`sdpa_attention.py`, decomposition tables) included; allowed list matches what the prompt declares.
-- [ ] *Skill file accessible:* `ls discovery/skills/debug-graph-breaks/SKILL.md` exists (used in the with-skill arm).
-- [ ] *No conflicting trials in flight:* `ps -ef | grep "discovery.run_case --case <case_id>"` returns nothing — sequential trials would conflict on shared model files.
+- [ ] *Skill file accessible:* `ls skills/debug-graph-breaks/SKILL.md` exists (used in the with-skill arm).
+- [ ] *No conflicting trials in flight:* `ps -ef | grep "scripts.run_case --case <case_id>"` returns nothing — sequential trials would conflict on shared model files.
 
 If any item is flagged, fix or document the deviation BEFORE launching. Don't launch with unchecked items.
 
@@ -206,3 +206,7 @@ These are scope for a separate runner-changes PR (linked from the umbrella when 
 - *2026-04-25:* Switched standard matrix from 4 variants (V0,V2,V4,V6 = 24 trials/case) to 2 variants (V0,V2 = 12 trials/case) with V4/V6 as conditional follow-ups gated on Phase B trigger checks. Reason: Mistral3 case 3a ran the full 24-trial matrix and the master finding (perf delta lives in `fix_locus`, not `variant`) showed the V4/V6 cells produced essentially the same pattern as V0/V2 — half the budget would have surfaced the same headline. The conditional triggers (`is_compiling` or canonical escape hatch → V4; config flag flip → V6) ensure V4/V6 still run when they'd be informative. Mistral3's existing 24-trial run is grandfathered.
 - *2026-04-25 (later):* PR-FIRST workflow for analysis output discontinued. Per-case findings now commit to main directly + headline summary on the per-case issue. PR diffs are hard to read for analysis docs (most of the value is the prose, not line-level changes), and feature branches accumulated merge conflicts when methodology landed during a review cycle. Encoding removed from CLAUDE.md, per-case-analysis SKILL Phase F, and step 7 of Per-case execution shape above.
 - *2026-04-25 (evening):* Added V8 ("model-layer fix only") as a conditional variant. Trigger: ≥50% of trials in any cell end `fix_status = setup-required` (i.e. setup-edit attractor present). Designed in response to VitsModel case 3b's 12/12 setup-required result on V0/V2/V4. Promoted the underlying methodology — *shut the door to shortcut solutions to steer agents toward novel/deeper graph-break strategies* — to organizing principle of the variant catalog. Variant table now lists each variant's "door it closes" alongside its constraint. Catalog growth rule documented: whenever the standard matrix reveals a dominant shortcut attractor, add a door-closing variant for it.
+
+## Lifecycle bypass — 2026-04-30 14:43 ET
+**Launcher:** scripts/launch_parallel.py
+**Reason:** Migration Tier 2 validation — single VITS V8 trial to validate launch_parallel/runner/agent end-to-end in pt2-skill-discovery repo. Not a real experiment.

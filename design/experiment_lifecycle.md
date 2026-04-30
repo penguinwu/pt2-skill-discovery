@@ -54,9 +54,9 @@ Write to the experiment's `plan.md` BEFORE touching code or compute:
 
 ### Gate 1 — Infra readiness (cheap, < 1 min)
 
-- Run `python -m discovery.smoke_test`. Must exit 0.
+- Run `python -m scripts.smoke_test`. Must exit 0.
 - If a NEW component or behavior was added since last smoke run that isn't covered by an existing test, ADD A TEST for it FIRST. Both happy-path AND broken-path. Until that test exists, Gate 1 is failed.
-- Verify all watched files are restored to `.original` (`ls discovery/cases/*.original 2>/dev/null` matches expected; or programmatic check).
+- Verify all watched files are restored to `.original` (`ls cases/*.original 2>/dev/null` matches expected; or programmatic check).
 - Verify `git status` clean for any harness file you've touched (don't leave uncommitted methodology changes during an experimental run).
 
 ### Gate 2 — Single-trial validation (~5 min)

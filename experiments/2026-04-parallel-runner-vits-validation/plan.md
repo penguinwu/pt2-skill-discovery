@@ -79,25 +79,25 @@ Total: ~80 min wall, ~30 min Otter active time (rest is agent runs in background
 
 ## Implementation order
 
-1. *Gate 1*: re-run `python -m discovery.smoke_test --skip-cases` immediately before launch
+1. *Gate 1*: re-run `python -m scripts.smoke_test --skip-cases` immediately before launch
 2. *Gate 2*: launch single trial:
    ```
-   python -m discovery.launch_parallel \
+   python -m scripts.launch_parallel \
        --case vits_model_train --variants V8 --skills none --n 1 \
        --experiment-dir /tmp/runs/parallel-vits-validation/step2 \
        --max-parallel 1 \
-       --plan discovery/experiments/2026-04-parallel-runner-vits-validation/plan.md
+       --plan experiments/2026-04-parallel-runner-vits-validation/plan.md
    ```
    Inspect: result.json, agent_diff.patch (sandbox paths), validator stderr
 3. *Gate 3*: launch 2-trial parallel (V8 noskill + dgb):
    ```
-   python -m discovery.launch_parallel \
+   python -m scripts.launch_parallel \
        --case vits_model_train --variants V8 \
-       --skills none,/home/pengwu/projects/oss-model-graph-break-corpus/discovery/skills/debug-graph-breaks/SKILL.md \
+       --skills none,skills/debug-graph-breaks/SKILL.md \
        --n 1 \
        --experiment-dir /tmp/runs/parallel-vits-validation/step3 \
        --max-parallel 2 \
-       --plan discovery/experiments/2026-04-parallel-runner-vits-validation/plan.md
+       --plan experiments/2026-04-parallel-runner-vits-validation/plan.md
    ```
    Inspect: 2 result.json files, sandboxes isolated, summary.md sane
 4. *Findings*: if all gates pass, commit a brief writeup to this experiment dir noting:

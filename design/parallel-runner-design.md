@@ -42,10 +42,10 @@ Cost: 49 MB × 6 parallel trials = ~300 MB disk; `cp -r` is ~2-5 sec per trial.
 launch_parallel.sh                              # 5-line shell loop
   walk lifecycle gate ONCE (smoke + plan.md)
   for config_id in cfg1..cfgM:
-    nohup python -m discovery.run_config \
+    nohup python -m scripts.run_config \
       --config <config_id> --out /tmp/runs/<exp>/<config_id>/ &
   wait
-  python -m discovery.merge_results --in /tmp/runs/<exp>/ --out summary.{md,json}
+  python -m scripts.merge_results --in /tmp/runs/<exp>/ --out summary.{md,json}
 ```
 
 Each `run_config` process owns one configuration end-to-end:

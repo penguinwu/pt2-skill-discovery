@@ -10,4 +10,4 @@ Sister repo: penguinwu/oss-model-graph-break-corpus — supplies model targets +
 
 ## Operating rules
 
-To be populated post-migration. Until then, the operating rules at `~/projects/oss-model-graph-break-corpus/discovery/EXPERIMENT_LIFECYCLE.md` and the corpus repo's CLAUDE.md govern this project.
+To be populated post-migration. Until then, the operating rules at `design/experiment_lifecycle.md` (in this repo) and the corpus repo's CLAUDE.md govern this project.
