@@ -2,7 +2,7 @@
 """Emit daily-brief data as JSON.
 
 Pure data gatherer — does NOT compose prose. Composition is owned by the
-`daily-briefing` skill (see `discovery/skills/daily-briefing/SKILL.md`).
+`daily-briefing` skill (see `skills/daily-briefing/SKILL.md`).
 
 Usage:
     python3 tools/brief_data.py                # JSON to stdout
@@ -10,7 +10,7 @@ Usage:
 Schema (top-level keys):
   today          str  ISO date
   yesterday      str  ISO date (today - 1)
-  commits        list of {sha, msg}        — git log on corpus repo since yesterday 00:00 local
+  commits        list of {sha, msg}        — git log on this repo since yesterday 00:00 local
   closed_issues  list of {number, title, url, closed_at}  — repo issues closed in last 24h
   closed_loops   list of str               — bullets from OPEN-LOOPS Recently Closed (yesterday or today)
   plans          dict                      — passthrough of check_plan.py --json
@@ -215,6 +215,38 @@ def parse_open_loops(path: Path) -> dict:
     return {"sections": sections, "needs_input": needs_input}
 
 
+def gather_filed_issue_activity() -> dict:
+    """Run check_filed_issues.py to detect new activity on Otter-tracked issues.
+
+    Uses --no-update so the brief composition step doesn't race with the cron's
+    state file (which check_filed_issues.py owns separately). Returns a dict with
+    `new_activity_count`, `total_count`, and `issues` (list, only with new_activity=True).
+
+    Failures are non-fatal: returns a stub if the script crashes (e.g., proxy down).
+    """
+    script = Path(__file__).parent / "check_filed_issues.py"
+    if not script.exists():
+        return {"new_activity_count": 0, "total_count": 0, "issues": [], "available": False}
+    try:
+        res = subprocess.run(
+            ["python3", str(script), "--changes-only", "--no-update"],
+            capture_output=True, text=True, timeout=60,
+        )
+        if res.returncode != 0:
+            return {"new_activity_count": 0, "total_count": 0, "issues": [],
+                    "available": False, "error": res.stderr.strip()[:200]}
+        data = json.loads(res.stdout)
+        return {
+            "new_activity_count": data.get("new_activity_count", 0),
+            "total_count": data.get("total_count", 0),
+            "issues": data.get("issues", []),
+            "available": True,
+        }
+    except Exception as e:
+        return {"new_activity_count": 0, "total_count": 0, "issues": [],
+                "available": False, "error": f"{type(e).__name__}: {str(e)[:200]}"}
+
+
 def read_handoff() -> dict:
     if not HANDOFF_PATH.exists():
         return {"exists": False}
@@ -250,6 +282,7 @@ def main() -> int:
         "experiments": run_check_experiments(),
         "backlog_aged": gather_backlog_aged(),
         "open_loops": parse_open_loops(OPEN_LOOPS_PATH),
+        "filed_issue_activity": gather_filed_issue_activity(),
         "handoff": read_handoff(),
     }
     json.dump(payload, sys.stdout, indent=2)

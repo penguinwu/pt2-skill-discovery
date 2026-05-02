@@ -10,9 +10,9 @@ Example:
 
 Default behavior (lightweight, local):
   1. Computes the experiment dir name = "YYYY-MM-<slug>" (date prefix auto).
-  2. Creates discovery/experiments/<dirname>/{,reports/}.
+  2. Creates experiments/<dirname>/{,reports/}.
   3. Renders tools/templates/experiment_plan.md to plan.md (methodology TODOs).
-  4. Updates discovery/experiments/README.md table to list the new experiment.
+  4. Updates experiments/README.md table to list the new experiment.
   5. Prints next-step instructions.
 
 Per Peng 2026-04-27: GitHub-issue creation is ORTHOGONAL to scaffolding an
@@ -148,7 +148,7 @@ def main() -> None:
     print()
     print("next steps:")
     print(f"  1. Edit {plan_path} — fill in TBDs (methodology, axes, what we record)")
-    print(f"  2. Author per-case files in discovery/cases/")
+    print(f"  2. Author per-case files in cases/")
     print(f"  3. (optional) Create per-case issues: tools/new_case_issue.py {full_slug} <case_id> <model_name>")
     print(f"  4. Commit + push")
 

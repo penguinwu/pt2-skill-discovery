@@ -210,3 +210,15 @@ These are scope for a separate runner-changes PR (linked from the umbrella when 
 ## Lifecycle bypass — 2026-04-30 14:43 ET
 **Launcher:** scripts/launch_parallel.py
 **Reason:** Migration Tier 2 validation — single VITS V8 trial to validate launch_parallel/runner/agent end-to-end in pt2-skill-discovery repo. Not a real experiment.
+
+## Lifecycle bypass — 2026-04-30 15:32 ET
+**Launcher:** scripts/launch_parallel.py
+**Reason:** Migration Tier 2 retry — first attempt failed at mutation check (missing .original baseline, now placed)
+
+## Lifecycle bypass — 2026-05-02 15:55 ET
+**Launcher:** scripts/launch_parallel.py
+**Reason:** Migration Tier 2 retry post-Tier 4 — proves launch_parallel + runner + claude agent end-to-end in pt2-skill-discovery, with the bootstrap fix from `19e15ca` in place. Cold-start (Tier 4) already passed today (smoke + utilities clean with corpus/discovery moved aside). This trial is the final gating evidence before Phase 6b (deletion of corpus/discovery/). Not a real experiment.
+
+## Lifecycle bypass — 2026-05-02 12:51 ET
+**Launcher:** scripts/launch_parallel.py
+**Reason:** Migration Tier 2 retry 2026-05-02

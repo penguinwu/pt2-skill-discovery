@@ -1,12 +1,12 @@
 #!/usr/bin/env python3
 """Drift detector for the discovery experiment convention.
 
-Walks `discovery/experiments/*/` and validates:
+Walks `experiments/*/` and validates:
 
   * Every directory has a `plan.md`.
   * `plan.md` has the required header lines (Slug, Title, Owner, Umbrella issue, Status, Created, Last updated).
   * The slug in `plan.md` matches the directory name.
-  * The directory is listed in `discovery/experiments/README.md`.
+  * The directory is listed in `experiments/README.md`.
   * `reports/` subdirectory exists.
 
 Usage:

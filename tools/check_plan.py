@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Walk the corpus repo for plan files, parse frontmatter, surface state.
+"""Walk the repo for plan files, parse frontmatter, surface state.
 
 A plan file is any markdown file whose path matches `**/plan*.md` and whose
 frontmatter contains `plan:` and `status:` keys.
